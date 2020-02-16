@@ -90,33 +90,33 @@ int interPairs = 1800; # ms     ORIGINALLY 1250 *****
 # S02 U02
 
 # Column 1: Sound filename, Column 2: Word filename, Column 3: "related"/"unrelated"
-array <string> soundsAndWords[0][3];
-string inputFilename = "sound_word_list.txt";
+array <string> sounds_and_words[0][3];
+string input_filename = "sound_word_list.txt";
 input_file fp = new input_file;
 
-# Opening the file specified by inputFilename
-fp.open( inputFilename );
+# Opening the file specified by input_filename
+fp.open( input_filename );
 
 #Read in first line
 string row = fp.get_string();
-int numRows = 0;
+int num_rows = 0;
 
 #Loop until there are no more lines in the file
 loop until !fp.last_succeeded() 
 begin
-	numRows = numRows + 1;
+	num_rows = num_rows + 1;
 		
-	# From file "S_01	W01_R"
+	# We get the string "S_01,W01_R" from the file
 	array<string> filenames[2];
 
-	# [ "S_01", "W01_R" ]
-	row.split("*", filenames);
+	# We split it into an array with two strings: [ "S_01", "W01_R" ]
+	row.split(",", filenames);
 	
 	string sound_filename = filenames[1];
 
 	string word_filename = filenames[2];
 
-	# "W01_R" -> ["W01", "R"]
+	# We take the word file name "W01_R" and split it on _ to get an array to extract R or UR -> ["W01", "R"]
 	array <string> word_filename_components[2];
 
 	word_filename.split("_", word_filename_components);
@@ -128,15 +128,17 @@ begin
 	row_elements.add(word_filename);
 	row_elements.add(r_or_ur);
 	
+	sounds_and_words.add(row_elements);
+	
 	# Load sound .wav file
 	#wavefile sf = new wavefile(sound_filename + ".wav");
 	#sf.load(); 
-	#soundsAndWords[numWords][0] = new sound(sf)
+	#sounds_and_words[numWords][0] = new sound(sf)
 
 	# Load word .wav file
 	#wavefile wf = new wavefile(word_filename + ".wav");
 	#wf.load()
-	#soundsAndWords[numWords][1] = new sound(wf);
+	#sounds_and_words[numWords][1] = new sound(wf);
 	
 	row = fp.get_string();
 end;
@@ -144,13 +146,13 @@ fp.close();
 
 
 #Loop until there are no more lines in the file
-loop int i=1 until i>numRows
+loop int i=1 until i>num_rows
 begin
 	term.print("Row: "); 
 	term.print(i); 
-	term.print(" Sound filename: " + soundsAndWords[i][1]); 
-	term.print(" Word filename: " + soundsAndWords[i][2]);
-	term.print_line(" Related: " 		+ soundsAndWords[i][3]);
+	term.print(" Sound filename: " + sounds_and_words[i][1]); 
+	term.print(" Word filename: " + sounds_and_words[i][2]);
+	term.print_line(" Related: " 		+ sounds_and_words[i][3]);
 	i = i + 1
 end;
 
