@@ -1,215 +1,887 @@
-#==================================================================================#
-#                                                                                  #
-#   Paradigm: N400 Sound-spoken word paradigm                                      #
-#                                                                                  #
-#   Lab: Language, Memory and Brain Lab                                            #
-#                                                                                  #
-#   Desciption: 122 sounds paired with either cong or                              #
-#   incong spoken words.                                                           #
-#                                                                                  #
-#   Written by: Netri Pajankar, pajankan@mcmaster.ca                               #
-#               Adianes Herrera, herrea2@mcmaster.ca                               #
-#                                                                                  #                   
-#==================================================================================#
-#
-#	
-#
-#####################################################################################
-# Header block
-#####################################################################################
-
-scenario = "N4SW";
-no_logfile = true;
-
-# config les pulses!!
-write_codes = false;
-pulse_width = 10;
-
-# font
-default_font_size = 32;
-default_font = "MS Mincho";
-
-response_matching = simple_matching;
-active_buttons = 1;
-button_codes = 10;
-
-default_attenuation = .1; #attenuates sound by 10 dB
-#####################################################################################
-# SDL block
-#####################################################################################
-
-begin;
-
-sound { wavefile { preload = false; } wavep; } prime;
-sound { wavefile { preload = false; } wavet; } target;
-
-trial {
-	start_delay = 2000; #CHANGE ME FOR INTERTRIAL INTERVAL
-	stimulus_event {
-		picture {
-			text { caption = "+"; } blankText;
-			x = 0; y = 0;
-		} blankPic;
-		
-		#duration = 10;
-	} blankEvent;
-
-	stimulus_event {
-		sound prime;
-		delta_time = 0;
-		code = "C";		# C: congruent; IC: incongruent
-		#port_code = 5;
-	} primeEvent;
-	
-	stimulus_event {
-		sound target;		
-		time = 1500;	
-		#port_code = 1; # 1: congruent; 2: incongruent
-	} targetEvent;
-} wordPairTrial;   
-
-#####################################################################################
-# PCL block
-#####################################################################################
-
-begin_pcl;
-
-# Experiment-specific parameters
-
-string congruentPairsFileName = "";
-string incongruentPairsFileName = "IncongruentPairs.txt";
-
-#See line 396 for SOA and ISI. Interpairs: duration of audio file played.
-#int silencePadding = 100; # ms ORIGINALLY 100 *****
-int interPairs = 1800; # ms     ORIGINALLY 1250 *****
-#double jbdnasf = 1.343; # Variables whose values are determined from input
-
-# 1 Read word list and load sound files
-# Format:
-# S01 R01
-# S02 U02
-
-# Column 1: Sound filename, Column 2: Word filename, Column 3: "R"/"UR"
-array <string> sounds_and_words[0][3];
-string input_filename = "sound_word_list.txt";
-input_file fp = new input_file;
-
-# Opening the file specified by input_filename
-fp.open( input_filename );
-
-#Read in first line
-string row = fp.get_string();
-int num_rows = 0;
-
-#Loop until there are no more lines in the file
-loop until !fp.last_succeeded() 
-begin
-	num_rows = num_rows + 1;
-		
-	# We get the string "S_01,W01_R" from the file
-	array<string> filenames[2];
-
-	# We split it into an array with two strings: [ "S_01", "W01_R" ]
-	row.split(",", filenames);
-	
-	string sound_filename = filenames[1];
-
-	string word_filename = filenames[2];
-
-	# We take the word file name "W01_R" and split it on _ to get an array to extract R or UR -> ["W01", "R"]
-	array <string> word_filename_components[2];
-
-	word_filename.split("_", word_filename_components);
-
-	string r_or_ur = word_filename_components[2]; #'R', 'U'	
-	
-	array <string> row_elements[0];
-	row_elements.add(sound_filename);
-	row_elements.add(word_filename);
-	row_elements.add(r_or_ur);
-	
-	sounds_and_words.add(row_elements);
-	
-	# Load sound .wav file
-	#wavefile sf = new wavefile(sound_filename + ".wav");
-	#sf.load(); 
-	#sounds_and_words[numWords][0] = new sound(sf)
-
-	# Load word .wav file
-	#wavefile wf = new wavefile(word_filename + ".wav");
-	#wf.load()
-	#sounds_and_words[numWords][1] = new sound(wf);
-	
-	row = fp.get_string();
-end;
-fp.close();
-
-sounds_and_words.shuffle();
-
-#Loop until there are no more lines in the file
-loop int i=1 until i>num_rows
-begin
-	term.print("Row: "); 
-	term.print(i); 
-	term.print(" Sound filename: " + sounds_and_words[i][1]); 
-	term.print(" Word filename: " + sounds_and_words[i][2]);
-	term.print_line(" Related: " 		+ sounds_and_words[i][3]);
-	
-	string sound_filename = sounds_and_words[i][1];
-	string word_filename = sounds_and_words[i][2];
-	string r_or_ur = sounds_and_words[i][3];
-	
-	# Load sound .wav file
-	wavefile sf = new wavefile(sound_filename + ".wav");
-	sf.load(); 
-	sound prime_sound = new sound(sf);
-	primeEvent.set_event_code(r_or_ur);
-	primeEvent.set_stimulus(prime_sound);
-	
-	# Load word .wav file
-	wavefile wf = new wavefile(word_filename + ".wav");
-	wf.load();
-	sound target_sound = new sound(wf);
-	targetEvent.set_stimulus(target_sound);
-	
-	wordPairTrial.present();
-	
-	i = i + 1
-end;
-
-### NOTICE: i was originally initialized to 2, NOT 1
-#loop int i=1 until i>numPairs
-#begin
-
-#	term.print_line(i);
-
-	# for prime
-#	int primeIndex = wordPairArray[i][1];
-
-#	primeEvent.set_stimulus(wordSoundArray[primeIndex]);
-	
-#	if (wordPairArray[i][3]==1) then # Congruent
-#		primeEvent.set_event_code("C");
-#	else
-#		primeEvent.set_event_code("IC");
-#	end;
-	
-	#targetEvent.set_port_code(wordPairArray[i][3]); ## USED to be primeEvent...port_code
-
-	# for target
-	#int targetIndex = wordPairArray[i][2]; #102
-	#wordSoundArrat[102]
-	#targetEvent.set_stimulus(wordSoundArray[targetIndex]);
-	
-	#wordPairTrial.present();
-	#played = played + 1;
-	#term.print("played: "); term.print_line(played);
-	
-	#i = i + 1;
-#end;
-
-
-
-
- 
-
+<ver>21.1</ver>
+<efn>C:\Users\adity\Downloads\trial\test.sce</efn>
+<author></author>
+<con>
+<pause>P</pause>
+<pause_code></pause_code>
+<port1>1</port1>
+<quit>Q</quit>
+<quit2>0</quit2>
+<quit_code></quit_code>
+<resume>R</resume>
+<resume_code></resume_code>
+<send_output>0</send_output>
+<start_code></start_code>
+<tqcs>130</tqcs>
+<tqds>2</tqds>
+<tqms>0</tqms>
+<tqt>9</tqt>
+<tqu>0</tqu>
+</con>
+<dbi></dbi>
+<dbs>button</dbs>
+<ddi>0</ddi>
+<dds>
+<icm_profile></icm_profile>
+<orient>0</orient>
+<use_icm>0</use_icm>
+</dds>
+<ddv>Primary Display Driver</ddv>
+<depchg>1</depchg>
+<discard_windows_messages>0</discard_windows_messages>
+<display_status_window>1</display_status_window>
+<dmd>32</dmd>
+<dmh>1080</dmh>
+<dmr>60</dmr>
+<dmrf>59.918505784402</dmrf>
+<dmw>2560</dmw>
+<docs>
+<args></args>
+<exfl></exfl>
+<lfn></lfn>
+</docs>
+<dp_list></dp_list>
+<dsd>C:\Users\adity\Downloads\trial\sounds</dsd>
+<dwm>0</dwm>
+<dxv>8</dxv>
+<efs></efs>
+<exclusive_mouse>1</exclusive_mouse>
+<exp_version></exp_version>
+<exparam>
+<man>
+<cfg>
+<dcfg>
+<en>0</en>
+<guid>{A4049400-37E8-4968-B530-5FB3895F2FED}</guid>
+<name>Default configuration</name>
+<r>
+<plat>2147483647</plat>
+<rd>0</rd>
+<ss>0</ss>
+</r>
+<ss>
+<sd></sd>
+<sid>-1</sid>
+</ss>
+</dcfg>
+</cfg>
+<cs>-1</cs>
+<dl>
+<grps>
+<grp>
+<gn></gn>
+<pl></pl>
+</grp>
+</grps>
+</dl>
+<parms>
+<parms></parms>
+<ssl></ssl>
+</parms>
+<pass></pass>
+<ssa></ssa>
+</man>
+</exparam>
+<experiment_id></experiment_id>
+<font_settings>
+<dpi>96</dpi>
+<font_smooth>1</font_smooth>
+<use_dpi>1</use_dpi>
+<use_font_smooth>1</use_font_smooth>
+</font_settings>
+<ftp>
+<ccc>0</ccc>
+<do_upload></do_upload>
+<host></host>
+<id>{ADBC92BE-213A-468D-8F24-A7685D791B0F}</id>
+<idle_timeout>0</idle_timeout>
+<login_timeout>0</login_timeout>
+<mode>0</mode>
+<no_upload></no_upload>
+<password></password>
+<pasv>0</pasv>
+<port>21</port>
+<remote_dir></remote_dir>
+<sync>1</sync>
+<testing>0</testing>
+<type>0</type>
+<upload>0</upload>
+<username></username>
+</ftp>
+<idc>0</idc>
+<idt>1000</idt>
+<ilc>0</ilc>
+<ip_chans></ip_chans>
+<lfd>C:\Users\adity\Downloads\trial\</lfd>
+<lnb>2</lnb>
+<lno>0</lno>
+<log>
+<append_counter>0</append_counter>
+<delimiter>9</delimiter>
+<general_list>1</general_list>
+<its>0</its>
+<meta>0</meta>
+<pien>0</pien>
+<set_def_file></set_def_file>
+<stimulus_list>0</stimulus_list>
+<subject_id></subject_id>
+<subject_id_pol>0</subject_id_pol>
+<video_list>0</video_list>
+<warnings>1</warnings>
+</log>
+<lol>1</lol>
+<lpr></lpr>
+<lslset>
+<col>0</col>
+<def></def>
+<mod>0</mod>
+<name>Presentation</name>
+<use>0</use>
+</lslset>
+<maxpv></maxpv>
+<minpv></minpv>
+<nam>#==================================================================================#</nam>
+<one_processor>2</one_processor>
+<oports></oports>
+<out_encrypt_key></out_encrypt_key>
+<pi_list></pi_list>
+<plat>1</plat>
+<port_devices></port_devices>
+<rdl>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>18</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>Mouse</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>19</dx_device_type>
+<name>Keyboard</name>
+</device>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>0</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>HID-compliant mouse</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>0</dx_device_type>
+<name>HID Keyboard Device</name>
+</device>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>0</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>HID-compliant mouse 1</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>0</dx_device_type>
+<name>HID Keyboard Device 1</name>
+</device>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>0</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>HID-compliant mouse 2</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>0</dx_device_type>
+<name>HID Keyboard Device 2</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>0</dx_device_type>
+<name>Standard PS/2 Keyboard</name>
+</device>
+<device>
+<device_type>3</device_type>
+<dx_device_type>0</dx_device_type>
+<name>HID Keyboard Device 3</name>
+</device>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>0</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>HID-compliant mouse 3</name>
+</device>
+<device>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<abs_axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</abs_axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>Wheel</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<device_type>2</device_type>
+<dx_device_type>0</dx_device_type>
+<max_raw_pos>65535</max_raw_pos>
+<min_raw_pos>0</min_raw_pos>
+<name>PS/2 Compatible Mouse</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>Intel(R) HID Event Filter</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>Intel(R) HID Event Filter 1</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>Converted Portable Device Control device</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>Converted Portable Device Control device 1</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>2.4G Composite Devic</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>USB 2.4G Keyboard</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>USB Receiver</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>USB 2.4G Keyboard 1</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>USB Receiver 1</name>
+</device>
+<device>
+<device_type>4</device_type>
+<dx_device_type>17</dx_device_type>
+<name>2.4G Composite Devic 1</name>
+</device>
+<device>
+<axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>X-axis</name>
+<saturation>1</saturation>
+</axis>
+<axis>
+<dead_zone>0</dead_zone>
+<max>1000</max>
+<min>-1000</min>
+<name>Y-axis</name>
+<saturation>1</saturation>
+</axis>
+<device_type>6</device_type>
+<dx_device_type>0</dx_device_type>
+<name>gameport device</name>
+</device>
+<device>
+<device_type>9</device_type>
+<dx_device_type>0</dx_device_type>
+<name>sound device</name>
+</device>
+<device>
+<device_type>13</device_type>
+<dx_device_type>0</dx_device_type>
+<name>Speech Recognition</name>
+<speech>
+<engine_class></engine_class>
+<lang></lang>
+<mc>0</mc>
+<prerecord>0</prerecord>
+<rw>0</rw>
+<sil>200</sil>
+<srgs></srgs>
+<uwd>0</uwd>
+<vocab></vocab>
+</speech>
+</device>
+<device>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>x</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<axis>
+<max>1000</max>
+<min>-1000</min>
+<name>y</name>
+<restricted>1</restricted>
+<scale>1</scale>
+</axis>
+<buts>
+<but>
+<from>
+<states>down;</states>
+<type>2</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_y>
+<name>Pointer Down</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>5</type>
+</to>
+</but>
+<but>
+<from>
+<states>down;</states>
+<type>5</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_y>
+<name>Pointer Up</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>2</type>
+</to>
+</but>
+<but>
+<from>
+<states>down;</states>
+<type>2</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>1</units>
+<used>1</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_y>
+<name>Left Down</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>5</type>
+</to>
+</but>
+<but>
+<from>
+<states>down;</states>
+<type>2</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>0</inc>
+<origin>2</origin>
+<units>1</units>
+<used>1</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_y>
+<name>Right Down</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>5</type>
+</to>
+</but>
+<but>
+<from>
+<states>down;</states>
+<type>2</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>0</inc>
+<origin>2</origin>
+<units>1</units>
+<used>1</used>
+<value>0</value>
+</min_y>
+<name>Top Down</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>5</type>
+</to>
+</but>
+<but>
+<from>
+<states>down;</states>
+<type>2</type>
+</from>
+<max_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</max_x>
+<max_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>1</units>
+<used>1</used>
+<value>0</value>
+</max_y>
+<min_x>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_x>
+<min_y>
+<inc>1</inc>
+<origin>2</origin>
+<units>2</units>
+<used>0</used>
+<value>0</value>
+</min_y>
+<name>Bottom Down</name>
+<primary></primary>
+<to>
+<states>down;</states>
+<type>5</type>
+</to>
+</but>
+</buts>
+<device_type>5</device_type>
+<dx_device_type>0</dx_device_type>
+<name>pointing device</name>
+<uoh>1</uoh>
+<upc>0</upc>
+<uvt>1</uvt>
+</device>
+</rdl>
+<refchg>1</refchg>
+<rep>1</rep>
+<require_name_match>1</require_name_match>
+<reschg>1</reschg>
+<rng>0</rng>
+<rts>1</rts>
+<sce>
+<idv>
+<device_type>2</device_type>
+<dx_device_type>18</dx_device_type>
+<ibn>Button 0</ibn>
+<idn>Mouse</idn>
+<index>0</index>
+<label></label>
+<offset>12</offset>
+</idv>
+<overrides></overrides>
+<sfn>all_scenarios</sfn>
+</sce>
+<sct>
+<capture_device>
+<abort_on_max_drops>0</abort_on_max_drops>
+<bps></bps>
+<chan></chan>
+<closest_match>0</closest_match>
+<closest_match_max></closest_match_max>
+<closest_match_min>1, 16, 8000</closest_match_min>
+<do_rec_vol>0</do_rec_vol>
+<freq></freq>
+<ignore_drops>1</ignore_drops>
+<max_drops>250</max_drops>
+<max_rec_dur>60</max_rec_dur>
+<name>None</name>
+<rec_vol>1</rec_vol>
+<show_drops>1</show_drops>
+</capture_device>
+<resp_dev>
+<combine>0</combine>
+<ignore>1000</ignore>
+<isr>0</isr>
+<md></md>
+<mio></mio>
+<off_inter>200</off_inter>
+<off_thresh>0.02</off_thresh>
+<onset_mode>0</onset_mode>
+<rec_dur>1000</rec_dur>
+<save>0</save>
+<thresh>0.2</thresh>
+</resp_dev>
+</sct>
+<sde>
+<buffer_length>1000</buffer_length>
+<custom_buf>primary</custom_buf>
+<default>1</default>
+<dup_channels>1</dup_channels>
+<ex_period>10</ex_period>
+<halt_on_underrun>1</halt_on_underrun>
+<max_mix_length>50</max_mix_length>
+<min_mix_length>25</min_mix_length>
+<mixer>custom</mixer>
+<rewind_distance>10</rewind_distance>
+<sh_period>0</sh_period>
+<side_speakers>1</side_speakers>
+<use_rewind_distance>0</use_rewind_distance>
+</sde>
+<sdv>Primary Sound Driver</sdv>
+<show_dis>1</show_dis>
+<show_parm>1</show_parm>
+<show_term>1</show_term>
+<smc>2</smc>
+<smd>16</smd>
+<smr>44100</smr>
+<srs>1</srs>
+<sse>
+<s>
+<a></a>
+<ce>1</ce>
+<ep>1</ep>
+<p>0</p>
+</s>
+</sse>
+<svl>
+<attenuation>0</attenuation>
+<do_attenuation>0</do_attenuation>
+<do_volume>0</do_volume>
+<volume>1</volume>
+</svl>
+<swp>1</swp>
+<text_encoding>single_byte</text_encoding>
+<trigger_mode>
+<cn></cn>
+<m>0</m>
+<v></v>
+<vt>0</vt>
+</trigger_mode>
+<udt>0</udt>
+<unc>#==================================================================================##                                                                                  ##   Paradigm: N400 Sound-spoken word paradigm                                      ##                                                                                  ##   Lab: Language, Memory and Brain Lab                                            ##                                                                                  #</unc>
+<upb>0</upb>
+<urp>0</urp>
+<wob>1</wob>
