@@ -89,7 +89,7 @@ int interPairs = 1800; # ms     ORIGINALLY 1250 *****
 # S01 R01
 # S02 U02
 
-# Column 1: Sound filename, Column 2: Word filename, Column 3: "related"/"unrelated"
+# Column 1: Sound filename, Column 2: Word filename, Column 3: "R"/"UR"
 array <string> sounds_and_words[0][3];
 string input_filename = "sound_word_list.txt";
 input_file fp = new input_file;
@@ -144,6 +144,7 @@ begin
 end;
 fp.close();
 
+sounds_and_words.shuffle();
 
 #Loop until there are no more lines in the file
 loop int i=1 until i>num_rows
@@ -153,6 +154,26 @@ begin
 	term.print(" Sound filename: " + sounds_and_words[i][1]); 
 	term.print(" Word filename: " + sounds_and_words[i][2]);
 	term.print_line(" Related: " 		+ sounds_and_words[i][3]);
+	
+	string sound_filename = sounds_and_words[i][1];
+	string word_filename = sounds_and_words[i][2];
+	string r_or_ur = sounds_and_words[i][3];
+	
+	# Load sound .wav file
+	wavefile sf = new wavefile(sound_filename + ".wav");
+	sf.load(); 
+	sound prime_sound = new sound(sf);
+	primeEvent.set_event_code(r_or_ur);
+	primeEvent.set_stimulus(prime_sound);
+	
+	# Load word .wav file
+	wavefile wf = new wavefile(word_filename + ".wav");
+	wf.load();
+	sound target_sound = new sound(wf);
+	targetEvent.set_stimulus(target_sound);
+	
+	wordPairTrial.present();
+	
 	i = i + 1
 end;
 
